@@ -1,0 +1,82 @@
+[
+  {
+    "content": "User said 'Hello....'—noting it.",
+    "timestamp": "2025-03-23 17:01:25",
+    "source": "user"
+  },
+  {
+    "content": "User said 'been talking to on D...'—noting it.",
+    "timestamp": "2025-03-23 17:01:56",
+    "source": "user"
+  },
+  {
+    "content": "Web said 'Quirk is a web-based...'—noting it.",
+    "timestamp": "2025-03-23 17:02:11",
+    "source": "web"
+  },
+  {
+    "content": "User said 'Nothing much just uh...'—noting it.",
+    "timestamp": "2025-03-23 17:02:14",
+    "source": "user"
+  },
+  {
+    "content": "User said 'Yes....'—noting it.",
+    "timestamp": "2025-03-23 17:02:46",
+    "source": "user"
+  },
+  {
+    "content": "User said 'No, I haven't really...'—noting it.",
+    "timestamp": "2025-03-23 17:03:21",
+    "source": "user"
+  },
+  {
+    "content": "Web said 'These old-school tec...'—noting it.",
+    "timestamp": "2025-03-23 17:03:37",
+    "source": "web"
+  },
+  {
+    "content": "User said 'I have, you told me ...'—noting it.",
+    "timestamp": "2025-03-23 17:03:44",
+    "source": "user"
+  },
+  {
+    "content": "User said 'you mentioned quirk...'—noting it.",
+    "timestamp": "2025-03-23 17:04:00",
+    "source": "user"
+  },
+  {
+    "content": "User said 'hi...'—noting it.",
+    "timestamp": "2025-03-23 17:43:47",
+    "source": "user"
+  },
+  {
+    "content": "User said 'I did not need that...'—noting it.",
+    "timestamp": "2025-03-23 17:44:03",
+    "source": "user"
+  },
+  {
+    "content": "User said 'you gave me an essay...'—noting it.",
+    "timestamp": "2025-03-23 17:44:23",
+    "source": "user"
+  },
+  {
+    "content": "Self said 'Hmm, \"I did not need...'—noting it.",
+    "timestamp": "2025-03-23 17:52:46",
+    "source": "self"
+  },
+  {
+    "content": "User said 'hello...'—noting it.",
+    "timestamp": "2025-03-23 17:58:04",
+    "source": "user"
+  },
+  {
+    "content": "Self said 'I'm ready to go! Let...'—noting it.",
+    "timestamp": "2025-03-23 17:59:17",
+    "source": "self"
+  },
+  {
+    "content": "User said 'chrissy...'—noting it.",
+    "timestamp": "2025-03-23 17:59:17",
+    "source": "user"
+  }
+]
