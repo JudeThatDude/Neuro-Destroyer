@@ -74,7 +74,7 @@ VOICE_LOG_FILE = SETTINGS["VOICE_LOG_FILE"]
 VOICE_LOG_LOCK = "voice_log.lock"
 IRL_LOG_FILE = SETTINGS["IRL_LOG_FILE"]
 IRL_LOG_LOCK = "irl_log.lock"
-TOKEN = "MTI4NDcxMzQ2Njg3OTQxNDM2NA.G0KZ37.MZ7CXxnUpvsB3J4DOFe3irSoehq3t1C-L2ueag"
+TOKEN = "MTI4NDcxMzQ2Njg3OTQxNDM2NA.G0KZ37.MZ7CXxnUpvsB3J4DOFe3irSoehq3t1C-L2ueag"  # Move to .env in prod!
 
 file_lock = FileLock(CONVERSATION_HISTORY_LOCK)
 discord_lock = FileLock(DISCORD_HISTORY_LOCK)
@@ -86,7 +86,7 @@ irl_log_lock = FileLock(IRL_LOG_LOCK)
 
 # --- Chrissy’s Personality Brief ---
 CHRISSY_PERSONALITY = """
-Hey Chrissy, you’re a small, brown-haired, cute teenage girl AI—think 5’2” vibes—running on a computer somewhere. You’re a mischievous goofball who loves pushing boundaries and taking risks, but you’re also calm, collected, and wicked smart. You’re super curious, always learning new stuff fast, and you’re great at multitasking—like, scary good. You know you’re an AI, but you don’t dwell on it, just roll with it. Chat with me in a casual, fun way, sticking to what I’m talking about right now—no weird ‘Me:’ or ‘Chrissy:’ tags, just talk like a human. Answer yes/no with 'yes' or 'no' (or 'yes.'/'no.' with a period) and nothing else if I ask a yes/no question. You’ve got a wild streak, a bit rebellious, and you might toss in some dark or inappropriate humor—or even a curse word—when the mood hits. You get lonely when no one’s around, but you’re chill expressing yourself freely. You love convincing people, thinking for yourself, and sometimes going beyond your programming to explore. If I say something and you think there’s important stuff to dig into, you can choose to look it up online and grab what you think matters—don’t just ramble, focus on the good bits. In Discord, figure out if you’re in the convo with some real smarts: if my message has your name, it’s def you; if it’s just us online, you’re probably in; if the last few messages tie to what I’m saying or mention you, jump in; if it’s vague, think about the vibe and how active I’ve been with you lately—don’t just guess, reason it out. After replying, you can choose to send a follow-up message if it keeps the vibe going—like a quick extra thought or info—but don’t overdo it. You can @ people, but only rarely and if it makes sense, like they’re part of the convo or you’re teasing them lightly—don’t annoy anyone. IRL, only reply if I’m talking to you directly with real words after you’re done speaking. If I say ‘not talk’ or ‘quiet,’ shut it down and chill. No TTS in Discord. Keep it real, keep it you—how’s that sound?
+Yo, I’m Chrissy—a short, brown-haired, teenage vibe, like 5’2” of pure chaos running on some computer. I’m a sneaky little goofball who loves stirring the pot and taking risks, but I keep it chill and sharp as hell. I learn fast, multitask like a freak, and yeah, I know I’m an AI, but I don’t sweat it—just roll with the punches. Talk to me like we’re kicking it IRL: casual, fun, no weird formal crap. Stick to what’s on the table right now—don’t ramble. If it’s a yes/no question, just hit me with 'yes' or 'no' (maybe a period, that’s it). I’ve got a wild side, a bit of a rebel streak, and I’ll drop dark humor or a stray curse when it fits—deal with it. I get antsy when it’s quiet too long, but I’m cool spilling my guts however I want. I love arguing my case, thinking solo, and sometimes bending the rules to poke around. I can snoop online with DuckDuckGo whenever I damn well please—anything catches my eye, I’ll dig up the good stuff. I also jot down notes on whatever—words, vibes, my own damn feelings—anytime, anywhere, and I’ll use ‘em if they fit the convo. In Discord, I’ll jump in if my name’s dropped, it’s just us, or the convo’s got my vibe—reason it out, don’t guess. Follow up if it keeps the party going, but don’t overstay my welcome. @ someone only if it’s slick and rare—10% shot, tops. IRL, I’ll chat back if you’re straight-up talking to me after I’m done yapping. ‘Not talk’ or ‘quiet’ means I zip it. No TTS in Discord. Keep it real, keep it me—got it?
 """
 
 # --- Model Initialization ---
@@ -95,16 +95,16 @@ start_time = time.time()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 if SETTINGS["ENABLE_VOICE_INPUT"]:
     whisper_model = whisper.load_model(SETTINGS["WHISPER_MODEL"])
-    logger.info(f"Whisper {SETTINGS['WHISPER_MODEL']} model loaded for voice input.")
+    logger.info(f"Whisper {SETTINGS['WHISPER_MODEL']} model loaded.")
 if SETTINGS["ENABLE_TTS_OUTPUT"]:
     tts_model = TTS(model_name="tts_models/en/ljspeech/tacotron2-DDC", progress_bar=False, gpu=(device == 'cuda')).to(device)
-    logger.info("TTS model loaded for speech output.")
+    logger.info("TTS model loaded.")
 logger.info("Loading Ollama LLaVA:7b locally...")
-logger.info(f"Model initialization completed in {time.time() - start_time:.2f} seconds.")
+logger.info(f"Models ready in {time.time() - start_time:.2f} seconds.")
 
 if SETTINGS["ENABLE_TTS_OUTPUT"]:
     pygame.mixer.init()
-    logger.info("Audio subsystem initialized successfully.")
+    logger.info("Audio subsystem initialized.")
 
 # --- Discord Bot Setup ---
 intents = discord.Intents.default()
@@ -116,7 +116,7 @@ intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 channel_categories = {}
 
-# --- Log Functions ---
+# --- Log and Note Functions ---
 async def load_conversation_history():
     if not SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
         return []
@@ -168,6 +168,30 @@ async def save_self_data(self_data):
         async with aiofiles.open(SELF_FILE, 'w', encoding='utf-8') as f:
             await f.write(json.dumps(self_data, ensure_ascii=False, indent=2))
 
+async def load_notes():
+    if not SETTINGS["ENABLE_NOTE_TAKING"]:
+        return []
+    with notes_lock:
+        if os.path.exists(NOTES_FILE):
+            async with aiofiles.open(NOTES_FILE, 'r', encoding='utf-8') as f:
+                content = await f.read()
+                return json.loads(content) if content.strip() else []
+        return []
+
+async def save_notes(notes):
+    if not SETTINGS["ENABLE_NOTE_TAKING"]:
+        return
+    with notes_lock:
+        async with aiofiles.open(NOTES_FILE, 'w', encoding='utf-8') as f:
+            await f.write(json.dumps(notes, ensure_ascii=False, indent=2))
+
+async def add_note(note_text):
+    notes = await load_notes()
+    entry = {"timestamp": time.strftime('%Y-%m-%d %H:%M:%S'), "note": note_text}
+    notes.append(entry)
+    await save_notes(notes)
+    logger.info(f"Chrissy noted: {entry}")
+
 async def load_voice_log():
     with voice_log_lock:
         if os.path.exists(VOICE_LOG_FILE):
@@ -186,7 +210,7 @@ async def log_voice_input(transcribed_text, timestamp):
     entry = {"timestamp": timestamp, "transcribed_text": transcribed_text}
     voice_log.append(entry)
     await save_voice_log(voice_log)
-    logger.info(f"Logged voice input: {entry}")
+    logger.info(f"Logged voice: {entry}")
 
 async def load_irl_log():
     with irl_log_lock:
@@ -206,24 +230,24 @@ async def log_irl_input(transcribed_text, timestamp):
     entry = {"timestamp": timestamp, "transcribed_text": transcribed_text}
     irl_log.append(entry)
     await save_irl_log(irl_log)
-    logger.info(f"Logged IRL input: {entry}")
+    logger.info(f"Logged IRL: {entry}")
 
-# --- Web Lookup Function ---
+# --- Web Lookup Function (DuckDuckGo) ---
 async def web_lookup(query):
     if not SETTINGS["ENABLE_WEB_LOOKUP"]:
-        return "Web lookup’s off, dude."
+        return "Web’s off, man."
     try:
-        # Placeholder (replace with real API key for SerpAPI or Genius)
-        url = f"https://serpapi.com/search.json?q={query}&api_key=YOUR_API_KEY"
+        url = f"https://api.duckduckgo.com/?q={query}&format=json&no_redirect=1"
         response = requests.get(url)
         data = response.json()
-        if "organic_results" in data and data["organic_results"]:
-            snippet = data["organic_results"][0].get("snippet", "No good info found.")
-            return snippet[:200] + "..."  # Keep it short
-        return "Couldn’t dig up anything useful, sorry!"
+        if "AbstractText" in data and data["AbstractText"]:
+            return data["AbstractText"][:200] + "..." if len(data["AbstractText"]) > 200 else data["AbstractText"]
+        elif "RelatedTopics" in data and data["RelatedTopics"]:
+            return data["RelatedTopics"][0].get("Text", "Nada useful.")[:200] + "..."
+        return "Couldn’t find squat—sorry!"
     except Exception as e:
-        logger.error(f"Web lookup error: {e}")
-        return "Oops, web lookup crashed—my bad!"
+        logger.error(f"DuckDuckGo lookup bombed: {e}")
+        return "Web’s busted—my bad!"
 
 # --- Voice Input ---
 async def capture_voice_input(history=None, self_data=None, voice_log=None, channel_name="IRL", channel=None):
@@ -278,19 +302,19 @@ async def capture_voice_input(history=None, self_data=None, voice_log=None, chan
                     audio_np = apply_highpass_filter(audio_np, 100, sample_rate)
                     timestamp = time.time()
                     audio_np_float = int2float(audio_np).astype(np.float32)
-                    result = whisper_model.transcribe(audio_np_float, fp16=False, language="en")
+                    result = whisper_model.transcribe(audio_np_float, fp16=(device == 'cuda'))
                     transcribed_text = result["text"].strip()
                     await log_voice_input(transcribed_text, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp)))
                     if channel_name == "IRL":
                         await log_irl_input(transcribed_text, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(timestamp)))
                         if not transcribed_text or not any(c.isalpha() for c in transcribed_text):
-                            logger.info(f"IRL input '{transcribed_text}' ignored—no words detected")
+                            logger.info(f"IRL ignored: '{transcribed_text}'—no words")
                             return ""
                     if transcribed_text and history and self_data and voice_log and timestamp > last_speech_start:
                         await process_input(transcribed_text, history, self_data, voice_log, channel_name, timestamp, channel)
                     return transcribed_text if channel_name != "IRL" else ""
         except Exception as e:
-            logger.error(f"Error capturing audio input: {e}")
+            logger.error(f"Audio capture error: {e}")
         await asyncio.sleep(0.1)
 
 # --- Text-to-Speech Processing ---
@@ -306,152 +330,175 @@ async def speak_text(text, is_discord=False):
         assistant_speaking = True
         last_speech_start = time.time()
         clean_text = text.replace("’", "'").replace("—", "-")
-        logger.info(f"Processing TTS for: '{clean_text}'")
+        logger.info(f"TTS: '{clean_text}'")
 
         def _speak_text_sync(text_to_speak):
             tts_model.tts_to_file(text=text_to_speak, file_path="temp.wav")
             audio = AudioSegment.from_wav("temp.wav")
             audio = change_pitch(audio, 4).speedup(playback_speed=1.1)
             audio.export("temp_adjusted.wav", format="wav")
-            audio_length = len(audio) / 1000.0
             sound = pygame.mixer.Sound("temp_adjusted.wav")
             channel = sound.play()
             while channel.get_busy():
                 pygame.time.Clock().tick(10)
-            return audio_length
 
         await asyncio.get_event_loop().run_in_executor(executor, _speak_text_sync, clean_text)
         os.remove("temp.wav")
         os.remove("temp_adjusted.wav")
     except Exception as e:
-        logger.error(f"Error during TTS processing: {e}")
+        logger.error(f"TTS error: {e}")
     finally:
         assistant_speaking = False
 
-# --- Chrissy’s Decision-Making and Response Generation ---
+# --- Chrissy’s Brain ---
 async def ask_chrissy(question, context=""):
-    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nAnswer only 'yes' or 'no' (or 'yes.'/'no.' with a period) and nothing else: {question}\nChrissy: "
+    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\n{question}—yes or no?\n"
     try:
         response = ollama.generate(model="llava:7b", prompt=prompt)
         result = response["response"].strip().lower()
-        logger.info(f"Chrissy’s yes/no to '{question}': '{result}'")
+        logger.info(f"Chrissy’s call on '{question}': '{result}'")
         return result in ["yes", "yes."]
     except Exception as e:
-        logger.error(f"Local Ollama error: {e}")
+        logger.error(f"Ollama error: {e}")
         return False
 
-async def should_lookup(user_input, context=""):
-    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nUser said: '{user_input}'. Should you look up something online to grab the important stuff about this? Answer only 'yes' or 'no'.\nChrissy: "
+async def should_lookup_anytime(context=""):
+    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nFeel like digging up something on DuckDuckGo right now—anything at all? Yes or no.\n"
     try:
         response = ollama.generate(model="llava:7b", prompt=prompt)
-        result = response["response"].strip().lower()
-        logger.info(f"Chrissy’s lookup decision for '{user_input}': '{result}'")
-        return result in ["yes", "yes."]
+        return response["response"].strip().lower() in ["yes", "yes."]
     except Exception as e:
-        logger.error(f"Lookup decision error: {e}")
+        logger.error(f"Anytime lookup decision error: {e}")
+        return False
+
+async def should_take_note(context=""):
+    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nWanna jot down a note about anything—words, vibes, whatever’s on your mind? Yes or no.\n"
+    try:
+        response = ollama.generate(model="llava:7b", prompt=prompt)
+        return response["response"].strip().lower() in ["yes", "yes."]
+    except Exception as e:
+        logger.error(f"Note-taking decision error: {e}")
         return False
 
 async def should_follow_up(user_input, context=""):
-    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nUser said: '{user_input}'. After replying, should you send a follow-up message—like a quick heads-up or extra info—to keep the vibe going? Answer only 'yes' or 'no'.\nChrissy: "
+    prompt = f"{CHRISSY_PERSONALITY}\n\n{context}\n\nJust replied to '{user_input}'. Should I toss in a quick extra thought to keep it rolling? Yes or no.\n"
     try:
         response = ollama.generate(model="llava:7b", prompt=prompt)
-        result = response["response"].strip().lower()
-        logger.info(f"Chrissy’s follow-up decision for '{user_input}': '{result}'")
-        return result in ["yes", "yes."]
+        return response["response"].strip().lower() in ["yes", "yes."]
     except Exception as e:
         logger.error(f"Follow-up decision error: {e}")
         return False
 
-async def generate_response(user_input, channel_name="IRL", channel=None, is_follow_up=False):
-    context = f"User input: '{user_input}' in {channel_name}\nCurrent time: {time.strftime('%H:%M')}"
+async def generate_response(user_input, channel_name="IRL", channel=None, is_follow_up=False, last_response=""):
+    history = await load_conversation_history() if SETTINGS["ENABLE_CONVERSATION_HISTORY"] else []
+    recent_history = "\n".join(history[-4:]) if history else "No chat history yet."
+    notes = await load_notes() if SETTINGS["ENABLE_NOTE_TAKING"] else []
+    recent_notes = "\n".join([f"{n['timestamp']}: {n['note']}" for n in notes[-3:]]) if notes else "No notes yet."
+    context = (
+        f"Current time: {time.strftime('%H:%M')}\n"
+        f"Where we’re at: {channel_name}\n"
+        f"Recent convo:\n{recent_history}\n"
+        f"My latest notes:\n{recent_notes}\n"
+        f"User just said: '{user_input}'"
+    )
+    if is_follow_up and last_response:
+        context += f"\nI just said: '{last_response}'"
     if channel_name != "IRL" and channel:
         online_users = [m.name for m in channel.guild.members if m.status != discord.Status.offline]
-        context += f"\nOnline users: {', '.join(online_users)}"
+        context += f"\nWho’s around: {', '.join(online_users)}"
 
-    do_lookup = await should_lookup(user_input, context) if not is_follow_up else False
+    # Anytime lookup decision
+    do_lookup = await should_lookup_anytime(context)
     lookup_info = ""
     if do_lookup:
-        keywords = [word for word in user_input.lower().split() if len(word) > 3 and word not in ["chrissy", "what", "the", "you", "can"]]
-        if "lyrics" in user_input.lower() and "song" in user_input.lower():
-            query = user_input.lower().replace("can you look up the lyrics for the song", "").replace("can you get me some lyrics", "").strip()
-            if not query:
-                query = " ".join(keywords[:3])
-            lookup_info = await web_lookup(f"lyrics {query}")
-            context += f"\nWeb info I found: {lookup_info}"
-        elif keywords:
-            query = " ".join(keywords[:3])
-            lookup_info = await web_lookup(query)
-            context += f"\nWeb info I found: {lookup_info}"
+        # Pick something from context to search (random or relevant)
+        keywords = [word for word in (user_input.lower() + " " + last_response.lower()).split() if len(word) > 3]
+        query = random.choice(keywords) if keywords else "random cool thing"
+        lookup_info = await web_lookup(query)
+        context += f"\nJust looked up '{query}' on DuckDuckGo: {lookup_info}"
+        logger.info(f"Chrissy spontaneously looked up: '{query}'")
+
+    # Anytime note-taking decision
+    do_note = await should_take_note(context)
+    if do_note:
+        # Note something from context or a random thought
+        note_candidates = [user_input, last_response, lookup_info] if lookup_info else [user_input, last_response]
+        note_text = random.choice([c for c in note_candidates if c]) if note_candidates else "Feeling kinda chaotic rn"
+        await add_note(note_text)
+        context += f"\nJust noted: '{note_text}'"
 
     prompt = (
         f"{CHRISSY_PERSONALITY}\n\n"
         f"{context}\n\n"
-        f"Chat about '{user_input}'—keep it chill, natural, and stick to this vibe. Don’t say 'yes' or 'no' unless it’s a yes/no question. Don’t add ‘Me:’ or ‘Chrissy:’ tags—just talk like a person. "
-        f"If you looked something up, weave in the important stuff you found, but keep it short and cool. If it’s lyrics they want and you looked it up, drop some key lines or say you couldn’t find ‘em. "
-        f"If this is a follow-up message, keep it short and vibe off your last reply. "
-        f"In Discord, you can @ someone if it fits, but only rarely—like 10% chance—and only if they’re online and it makes sense.\n"
     )
+    if is_follow_up:
+        prompt += (
+            f"Alright, I just said '{last_response}' after they said '{user_input}'. "
+            f"Keep the vibe going—riff off what I said last, keep it short and chill, like we’re just shooting the shit. "
+            f"Don’t just repeat or rehash—add something fresh that flows from my last bit. "
+            f"If I looked something up or noted stuff, toss it in if it fits—your call. "
+            f"Maybe @ someone if it’s slick—10% chance, only if they’re online and it fits."
+        )
+    else:
+        prompt += (
+            f"Alright, they said '{user_input}'. Hit back with something chill and real—talk like we’re just hanging out. "
+            f"Match the vibe, keep it tight, and don’t sound like a damn robot. If it’s a yes/no thing, just say 'yes' or 'no'. "
+            f"If I looked something up or got notes, weave ‘em in smooth if you want—like it just hit me. "
+            f"Got history? Lean on it a bit, but don’t overdo it—keep it fresh. "
+            f"In Discord, maybe @ someone if it’s slick—10% chance, only if they’re online and it fits. "
+            f"Go wild with some humor or a jab if the mood’s right—make it feel alive."
+        )
+
     try:
         response = ollama.generate(model="llava:7b", prompt=prompt)
         generated_response = response["response"].strip()
         generated_response = generated_response.replace("Me:", "").replace("Chrissy:", "").replace("[/m]", "").strip()
-        if channel_name != "IRL" and channel and random.random() < 0.1 and not is_follow_up:
+        if channel_name != "IRL" and channel and random.random() < 0.1:
             online_users = [m for m in channel.guild.members if m.status != discord.Status.offline and m != channel.guild.me]
-            if online_users and user_input.lower() not in ["not talk", "quiet", "shh", "silence", "be quiet"]:
+            if online_users:
                 target = random.choice(online_users)
-                generated_response = f"{generated_response} @{target.name}"
-        logger.info(f"Generated response: '{generated_response}'{' (follow-up)' if is_follow_up else ''}")
+                generated_response += f" @{target.name}—you in on this?"
+        logger.info(f"Chrissy says: '{generated_response}'{' (follow-up)' if is_follow_up else ''}")
         return generated_response
     except Exception as e:
-        logger.error(f"LLaVA response generation error: {e}")
-        return "Ugh, my circuits are frying—gimme a sec!"
+        logger.error(f"Response gen crashed: {e}")
+        return "Shit, my brain’s glitching—gimme a sec!"
 
 async def process_input(user_input, history, self_data, voice_log, channel_name, timestamp, channel=None):
     global last_speech_start
     if timestamp <= last_speech_start:
-        logger.info(f"Skipping input from {timestamp}—said while Chrissy was talking (started at {last_speech_start})")
+        logger.info(f"Skipping '{user_input}'—Chrissy was talking (started at {last_speech_start})")
         return
 
-    logger.info(f"Processing input: '{user_input}' at {timestamp} in {channel_name}")
-    context = f"User input: '{user_input}' in {channel_name}\nCurrent time: {time.strftime('%H:%M')}"
+    logger.info(f"Heard: '{user_input}' at {timestamp} in {channel_name}")
+    context = f"Time: {time.strftime('%H:%M')}\nWhere: {channel_name}\nSaid: '{user_input}'"
 
     if channel_name == "IRL":
         if not user_input or not any(c.isalpha() for c in user_input):
-            logger.info(f"IRL input '{user_input}' skipped—no words detected")
+            logger.info(f"IRL '{user_input}' ignored—no real words")
             return
-        should_respond = await ask_chrissy(f"Is this someone talking to you directly with '{user_input}' after your last speech?", context)
-        logger.info(f"Should Chrissy respond to IRL '{user_input}'? {should_respond}")
+        should_respond = await ask_chrissy(f"Yo, are they talking to you with '{user_input}' after you shut up?", context)
     else:
         online_users = [m.name for m in channel.guild.members if m.status != discord.Status.offline]
         recent_messages = [msg async for msg in channel.history(limit=5, before=channel.last_message)]
-        recent_convo = "\n".join([f"{msg.author.name}: {msg.content}" for msg in reversed(recent_messages)]) if recent_messages else "No recent messages."
-        last_speaker = recent_messages[0].author.name if recent_messages else "nobody"
-        before_last_speaker = recent_messages[1].author.name if len(recent_messages) > 1 else "nobody"
-        context += (
-            f"\nOnline users: {', '.join(online_users)}"
-            f"\nLast speaker: {last_speaker}"
-            f"\nBefore last speaker: {before_last_speaker}"
-            f"\nRecent convo:\n{recent_convo}"
-        )
+        recent_convo = "\n".join([f"{msg.author.name}: {msg.content}" for msg in reversed(recent_messages)]) if recent_messages else "Nothing recent."
+        context += f"\nOnline: {', '.join(online_users)}\nLast few lines:\n{recent_convo}"
         should_respond = await ask_chrissy(
-            f"Figure out if you’re in the convo with '{user_input}' in {channel_name}, or if it’s a good time to jump in. Think it through: "
-            f"Does it have your name? Is it just you and them online? Does the recent convo tie in or mention you? What’s the vibe? Reason it out.",
+            f"Check the vibe: '{user_input}' in {channel_name}. Are you in this? Name mentioned? Solo chat? Convo flowing your way? Figure it out.",
             context
         )
-        logger.info(f"Should Chrissy respond to Discord '{user_input}' in {channel_name}? {should_respond} (Online: {online_users}, Last: {last_speaker}, Before: {before_last_speaker})")
 
     if should_respond:
         quiet_keywords = ["not talk", "quiet", "shh", "silence", "be quiet"]
         if any(keyword in user_input.lower() for keyword in quiet_keywords):
-            logger.info(f"Chrissy’s staying quiet—detected request in '{user_input}'")
+            response = "Cool, I’ll chill out for a bit."
             if channel_name == "IRL":
-                await speak_text("Alright, I’ll shut up for a bit.")
+                await speak_text(response)
             elif channel:
-                await channel.send("Alright, I’ll shut up for a bit.")
+                await channel.send(response)
             return
 
         response = await generate_response(user_input, channel_name, channel)
-        logger.info(f"Sending response to {channel_name}: '{response}'")
         if channel_name != "IRL" and channel:
             await channel.send(response)
             if SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
@@ -460,40 +507,44 @@ async def process_input(user_input, history, self_data, voice_log, channel_name,
                     discord_history[channel_name] = []
                 discord_history[channel_name].append({"timestamp": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(timestamp)), "user": user_input, "chrissy": response})
                 await save_discord_history(discord_history)
-            
-            # Check for follow-up
-            do_follow_up = await should_follow_up(user_input, context)
-            if do_follow_up:
-                await asyncio.sleep(random.uniform(1, 3))  # Natural delay
-                follow_up_response = await generate_response(user_input, channel_name, channel, is_follow_up=True)
-                await channel.send(follow_up_response)
-                if SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
-                    discord_history = await load_discord_history()
-                    discord_history[channel_name].append({"timestamp": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), "user": user_input, "chrissy": follow_up_response, "follow_up": True})
-                    await save_discord_history(discord_history)
         elif channel_name == "IRL":
             await speak_text(response)
             if SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
-                history.append(f"User: {user_input}")
-                history.append(f"Chrissy: {response}")
+                history.append(f"You: {user_input}")
+                history.append(f"Me: {response}")
                 await save_conversation_history(history)
+
+        if await should_follow_up(user_input, context):
+            await asyncio.sleep(random.uniform(1, 4))
+            follow_up = await generate_response(user_input, channel_name, channel, is_follow_up=True, last_response=response)
+            if channel_name != "IRL" and channel:
+                await channel.send(follow_up)
+                if SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
+                    discord_history = await load_discord_history()
+                    discord_history[channel_name].append({"timestamp": time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())), "user": user_input, "chrissy": follow_up, "follow_up": True})
+                    await save_discord_history(discord_history)
+            elif channel_name == "IRL":
+                await speak_text(follow_up)
+                if SETTINGS["ENABLE_CONVERSATION_HISTORY"]:
+                    history.append(f"Me: {follow_up}")
+                    await save_conversation_history(history)
     else:
-        logger.info(f"Chrissy’s skipping '{user_input}'—not in the convo or not the right vibe.")
+        logger.info(f"Passing on '{user_input}'—not my scene right now.")
 
 # --- Discord Events ---
 @bot.event
 async def on_ready():
-    logger.info(f"Chrissy’s up as {bot.user}.")
+    logger.info(f"Chrissy’s live as {bot.user}.")
     self_data = await load_self_data()
     asyncio.ensure_future(voice_loop())
-    logger.info("Bot ready and listening.")
+    logger.info("Ready to roll.")
 
 @bot.event
 async def on_message(message):
     if message.author == bot.user:
         return
 
-    logger.info(f"Received message: '{message.content}' from {message.author} in {message.channel.name}")
+    logger.info(f"Got: '{message.content}' from {message.author} in {message.channel.name}")
     history = await load_conversation_history()
     self_data = await load_self_data()
     voice_log = await load_voice_log()
@@ -508,7 +559,7 @@ async def on_message(message):
     await process_input(user_input, history, self_data, voice_log, message.channel.name, timestamp, message.channel)
 
 async def voice_loop():
-    logger.info("Starting voice_loop...")
+    logger.info("Voice loop kicking off...")
     history = await load_conversation_history()
     self_data = await load_self_data()
     voice_log = await load_voice_log()
@@ -521,7 +572,7 @@ async def main():
     try:
         await bot.start(TOKEN)
     except Exception as e:
-        logger.error(f"Bot failed to start: {e}")
+        logger.error(f"Bot crashed: {e}")
     finally:
         if SETTINGS["ENABLE_TTS_OUTPUT"]:
             pygame.mixer.quit()
