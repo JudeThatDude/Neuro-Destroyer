@@ -28,7 +28,7 @@ template = """
 """
 
 # Set the number of situation-action pairs here
-NUM_PAIRS = 100  # Start small for debugging
+NUM_PAIRS = 1000  # Start small for debugging
 
 def generate_situation_and_action(template):
     # Use the template string directly
@@ -36,6 +36,7 @@ def generate_situation_and_action(template):
         f"{template}. Based on this character, generate a unique situation they might encounter "
         f"and describe what they would say in that situation and make it a conversation with at least ten pairs of back and forth talking with different charcaters and different words."
         f"Make each situation and action distinct and creative, fitting the character's traits."
+        f"Make sure she talks to many people with different personalities and backgrounds."
     )
     
     try:
